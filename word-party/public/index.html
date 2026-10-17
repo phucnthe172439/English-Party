@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Word Party: learn English words with friends</title>
+  <meta name="description" content="A multiplayer English word game for kids. See the Vietnamese, find the English word!">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎉</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<!-- HOME -->
+<main id="home" class="screen">
+  <header class="hero">
+    <div class="logo" aria-label="Word Party">
+      <span class="tile">W</span><span class="tile">o</span><span class="tile">r</span><span class="tile">d</span>
+      <span class="logo-gap"></span>
+      <span class="tile sun">P</span><span class="tile sun">a</span><span class="tile sun">r</span><span class="tile sun">t</span><span class="tile sun">y</span>
+    </div>
+    <p class="tagline">See the Vietnamese word, find the English one. Play with friends!</p>
+  </header>
+
+  <div class="home-grid">
+    <section class="card wide">
+      <label for="name">Your nickname</label>
+      <input id="name" maxlength="12" placeholder="Bin" autocomplete="off">
+      <p class="field-error" id="home-error"></p>
+      <p class="label">Pick your animal</p>
+      <div id="avatars" class="avatars"></div>
+    </section>
+
+    <section class="card">
+      <h2>Play now</h2>
+      <button class="btn btn-big" data-action="quick">⚡ Quick match</button>
+      <p class="note">Join kids who are waiting for a game.</p>
+      <div class="join-row">
+        <input id="code" maxlength="5" placeholder="ABCDE" aria-label="Room code" autocomplete="off">
+        <button class="btn btn-soft" data-action="join">Join room</button>
+      </div>
+      <p id="join-hint" class="note"></p>
+    </section>
+
+    <section class="card">
+      <h2>Make your own room</h2>
+      <p class="note">Pick topics, then invite friends.</p>
+      <div id="home-topics" class="chips"></div>
+      <button class="btn btn-alt btn-big" data-action="create">Create room</button>
+    </section>
+
+    <section class="card wide">
+      <h2>How to play</h2>
+      <ol class="levels">
+        <li class="level lv1"><b>Level 1: Quick pick</b><span>Pick the right English word from 4 choices. 50 points.</span></li>
+        <li class="level lv2"><b>Level 2: Missing letters</b><span>Tap letters to fill the blanks. New hints keep coming. 100 points.</span></li>
+        <li class="level lv3"><b>Level 3: Word race</b><span>Type the whole word in English. 150 points.</span></li>
+      </ol>
+      <p class="note">20 questions. A wrong try takes away 20 points, so think first!</p>
+    </section>
+  </div>
+</main>
+
+<!-- ROOM -->
+<main id="room" class="screen" hidden>
+  <div class="topbar">
+    <button class="btn btn-soft sm" data-action="leave">Leave</button>
+    <span class="room-chip"><span class="room-word">Room </span><b id="room-code-small"></b></span>
+    <button class="btn btn-soft sm" data-action="share">Invite friends</button>
+  </div>
+
+  <div class="room-grid">
+    <div class="main-col">
+      <section id="lobby" class="card" hidden>
+        <p class="label">Room code</p>
+        <div id="lobby-code" class="code-tiles"></div>
+        <ul id="lobby-players" class="players"></ul>
+        <h3>Topics</h3>
+        <div id="lobby-topics" class="chips"></div>
+        <div id="lobby-start" class="start-area"></div>
+      </section>
+
+      <section id="waiting" class="card center" hidden>
+        <div class="q-emoji">⏳</div>
+        <h2>A game is going on</h2>
+        <p class="note">You will play in the next one. Cheer for your friends in the chat!</p>
+      </section>
+
+      <section id="countdown" class="card center" hidden>
+        <p class="big-note">Get ready!</p>
+        <div class="count-num" data-timer-text></div>
+      </section>
+
+      <section id="play" hidden>
+        <div class="play-head card">
+          <span id="q-count"></span>
+          <span id="q-level"></span>
+          <span class="score">⭐ <b id="my-score">0</b></span>
+        </div>
+        <div class="timer" id="timer"><div class="timer-fill" data-timer-bar></div></div>
+        <div id="stage" class="card stage"></div>
+        <p id="stage-status" class="stage-status" aria-live="polite"></p>
+      </section>
+
+      <section id="finished" class="card" hidden></section>
+    </div>
+
+    <aside class="side-col">
+      <section class="card" id="scoreboard-card">
+        <h3>Players</h3>
+        <ol id="scoreboard" class="scoreboard"></ol>
+      </section>
+      <section class="card chat">
+        <h3>Chat</h3>
+        <ul id="chat-list" aria-live="polite"></ul>
+        <div class="reactions">
+          <button data-react="👋" aria-label="Wave">👋</button>
+          <button data-react="👍" aria-label="Thumbs up">👍</button>
+          <button data-react="😂" aria-label="Laugh">😂</button>
+          <button data-react="😮" aria-label="Wow">😮</button>
+          <button data-react="🎉" aria-label="Party">🎉</button>
+        </div>
+        <div class="chat-row">
+          <input id="chat-input" maxlength="120" placeholder="Say hi to your friends" autocomplete="off" aria-label="Chat message">
+          <button class="btn sm" data-action="chat">Send</button>
+        </div>
+        <p id="chat-error" class="field-error"></p>
+      </section>
+    </aside>
+  </div>
+</main>
+
+<div id="toast" class="toast" role="status"></div>
+<script src="/app.js"></script>
+</body>
+</html>
