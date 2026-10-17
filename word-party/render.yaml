@@ -1,0 +1,13 @@
+# Render Blueprint: New > Blueprint > pick this repo, Render reads this file.
+services:
+  - type: web
+    name: word-party
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    # ONE worker only: rooms live in this process's memory
+    startCommand: uvicorn api.index:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.8

@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.pytest_cache/
+
+# Secrets (Redis tokens, etc.)
+.env
+.env.*
+
+# Hosting tools
+.vercel/
+.render/
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Build and logs
+*.log
+*.zip
