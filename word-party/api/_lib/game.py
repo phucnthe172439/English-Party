@@ -27,6 +27,8 @@ TOTAL_QUESTIONS = 20
 MIN_PLAYERS = 2          # change to 1 if you want to test alone
 MAX_PLAYERS = 8
 WRONG_PENALTY = 20
+HINT_PENALTY = 20        # level 2: each letter the game shows takes 20 points off the prize
+MIN_HINT_POINTS = 20     # level 2: a correct answer always gives at least this much
 ACTIVE_SECONDS = 15      # no ping for 15s = offline
 COUNTDOWN_SECONDS = 4
 REVEAL_SECONDS = 4
@@ -231,10 +233,23 @@ def build_questions(topic_ids):
     return questions
 
 
+def hints_shown(q, elapsed):
+    """How many hidden letters the game has shown so far (always keeps 1 blank)."""
+    return min(int(elapsed // LEVELS[2]["hint_every"]), len(q["hidden"]) - 1)
+
+
+def points_for(q, elapsed):
+    """Prize for a correct answer right now. Level 2 loses points for every hint shown."""
+    points = LEVELS[q["level"]]["points"]
+    if LEVELS[q["level"]]["kind"] == "letters":
+        points = max(MIN_HINT_POINTS, points - HINT_PENALTY * hints_shown(q, elapsed))
+    return points
+
+
 def letters_view(code, round_no, q_index, q, elapsed):
     """Pattern with blanks + letter tiles. One more letter is shown every few seconds."""
     word, hidden = q["en"], q["hidden"]
-    shown = min(int(elapsed // LEVELS[2]["hint_every"]), len(hidden) - 1)   # always keep 1 blank
+    shown = hints_shown(q, elapsed)
     blanks = set(hidden[shown:])
     pattern = [None if i in blanks else ch for i, ch in enumerate(word)]
 
@@ -474,7 +489,7 @@ def submit_answer(store, code, pid, secret, answer):
         return {"result": "done"}
 
     key, score_field = room_key(room.code), f"s:{rnd}:{pid}"
-    points = LEVELS[m["questions"][qi]["level"]]["points"]
+    points = points_for(m["questions"][qi], t - m["phase_at"])
 
     if squash(answer) and squash(answer) == squash(m["questions"][qi]["en"]):
         took = round(t - m["phase_at"], 1)
@@ -511,7 +526,7 @@ def question_view(room, m, pid, t):
     elapsed = t - m["phase_at"]
     v = {
         "index": i, "total": len(m["questions"]), "level": q["level"], "kind": level["kind"],
-        "level_name": level["name"], "points": level["points"], "penalty": WRONG_PENALTY,
+        "level_name": level["name"], "points": points_for(q, elapsed), "penalty": WRONG_PENALTY,
         "vi": q["vi"], "emoji": q["emoji"], "topic": TOPICS[q["topic"]]["name"],
         "my_solved": room.solved(m["round"], i, pid),
     }
