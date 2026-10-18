@@ -601,4 +601,134 @@ function renderFinished(v) {
     : `<p class="note">${v.public ? "A new game opens soon." : "Waiting for the host to start a new game…"}</p>`;
 
   setHTML($("#finished"), `
-    <h2 class="center">${myRank === 1 ? "You won! 🏆" : "Game
+    <h2 class="center">${myRank === 1 ? "You won! 🏆" : "Game over!"}</h2>
+    ${myRank ? `<p class="note center">You are number ${myRank} with ${v.my_score} of ${v.max_score} points.</p>` : ""}
+    <div class="podium">${podium}</div>
+    ${review}
+    <div class="start-area">${action}</div>`);
+
+  if (S.lastStatus !== "finished" && myRank === 1) SOUND.win();
+}
+
+// ---------- host actions ----------
+
+async function roomAction(path, extra = {}) {
+  try { await api(`/rooms/${S.code}/${path}`, { ...auth(), ...extra }); pollNow(); }
+  catch (e) { toast(e.message, "bad"); }
+}
+
+function toggleRoomTopic(id) {
+  const now = S.view.topics;
+  const next = now.includes(id) ? now.filter((t) => t !== id) : [...now, id];
+  if (!next.length) return toast("Pick at least one topic.");
+  roomAction("topics", { topics: next });
+}
+
+// ---------- chat ----------
+
+function addChat(msgs) {
+  if (!msgs || !msgs.length) return;
+  const box = $("#chat-list");
+  const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 60;
+  for (const m of msgs) {
+    if (m.id <= S.after) continue;
+    S.after = m.id;
+    const li = document.createElement("li");
+    if (m.system) {
+      li.className = "sys";
+      li.textContent = m.text;
+    } else {
+      li.className = m.pid === S.pid ? "mine" : "";
+      li.innerHTML = `<span class="bubble xs">${m.avatar}</span><div><b>${esc(m.name)}</b><p>${esc(m.text)}</p></div>`;
+    }
+    box.appendChild(li);
+  }
+  while (box.children.length > 60) box.firstChild.remove();
+  if (nearBottom) box.scrollTop = box.scrollHeight;
+}
+
+async function sendChatText(text) {
+  const err = $("#chat-error");
+  if (!text.trim()) { err.textContent = "Type a message first."; return false; }
+  try {
+    await api(`/rooms/${S.code}/chat`, { ...auth(), text });
+    err.textContent = "";
+    pollNow();
+    return true;
+  } catch (e) {
+    err.textContent = e.message;
+    return false;
+  }
+}
+
+async function sendChat() {
+  const input = $("#chat-input");
+  if (await sendChatText(input.value)) input.value = "";
+}
+
+// ---------- events ----------
+
+document.addEventListener("click", (e) => {
+  const el = e.target.closest("button");
+  if (!el || el.disabled) return;
+  const d = el.dataset;
+  if (d.avatar) { S.avatar = d.avatar; return renderAvatars(); }
+  if (d.topic) return toggleHomeTopic(d.topic);
+  if (d.roomTopic) return toggleRoomTopic(d.roomTopic);
+  if (d.option !== undefined) return pickOption(Number(d.option));
+  if (d.tile !== undefined) return tapTile(Number(d.tile));
+  if (d.slot !== undefined) return tapSlot(Number(d.slot));
+  if (d.speak) return speak(d.speak);
+  if (d.react) return sendChatText(d.react);
+  const actions = {
+    quick: quickMatch, join: joinRoom, create: createRoom, leave: leaveRoom, share: shareRoom,
+    chat: sendChat, start: () => roomAction("start"), again: () => roomAction("again"),
+    "send-race": sendRace, "clear-letters": clearLetters,
+  };
+  actions[d.action]?.();
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Enter") return;
+  if (e.target.id === "race-input") sendRace();
+  if (e.target.id === "chat-input") sendChat();
+  if (e.target.id === "code") joinRoom();
+  if (e.target.id === "name") $("#code").value.trim() ? joinRoom() : quickMatch();
+});
+
+document.addEventListener("input", (e) => {
+  if (e.target.id === "race-input") updateRaceBoxes();
+  if (e.target.id === "code") { e.target.value = e.target.value.toUpperCase(); $("#join-hint").textContent = ""; }
+  if (e.target.id === "chat-input") $("#chat-error").textContent = "";
+  if (e.target.id === "name") $("#home-error").textContent = "";
+});
+
+// ---------- start ----------
+
+async function init() {
+  const saved = storage.get("localStorage", "wp:profile") || {};
+  try {
+    const data = await api("/topics");
+    AVATARS = data.avatars;
+    S.allTopics = data.topics;
+    S.homeTopics = data.topics.map((t) => t.id);
+    S.realtime = data.realtime && "WebSocket" in window;
+  } catch {
+    toast("Can't reach the game server. Check your internet.", "bad");
+  }
+  S.avatar = AVATARS.includes(saved.avatar) ? saved.avatar : AVATARS[Math.floor(Math.random() * AVATARS.length)];
+  $("#name").value = saved.name || "";
+  renderAvatars();
+  renderHomeTopics();
+
+  const code = (new URLSearchParams(location.search).get("room") || "").toUpperCase();
+  if (code) {
+    const creds = storage.get("sessionStorage", "wp:room:" + code);
+    if (creds) return enterRoom(creds);           // page refresh: jump back into the room
+    $("#code").value = code;
+    $("#join-hint").textContent = "You got an invite! Write your nickname and tap Join room.";
+  }
+}
+
+requestAnimationFrame(tick);
+init();
